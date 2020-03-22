@@ -3,13 +3,13 @@ const mongoose = require('mongoose');
 const cardSchema = new mongoose.Schema({
     name: { // имя карточки
         type: String,
-        required: true,
+        required: [true, 'Необходимо указать название карточки'],
         minlength: 2,
         maxlength: 30
     },
     link: { // ссылка на картинку
         type: String,
-        required: true,
+        required: [true, 'Необходимо указать ссылку на изображение'],
         validate: {
             validator: (link) => {
                 return /^https?:\/\/\S+(?:\.[a-zA-Z]{2,8})\/\S+(?:jpg|jpeg|png)$/.test(link);
@@ -20,7 +20,7 @@ const cardSchema = new mongoose.Schema({
     owner: { // ссылка на модель автора карточки
         type: mongoose.Schema.Types.ObjectId,
         ref: 'user',
-        required: true
+        required: [true, 'Необходимо указать id автора']
     },
     likes: [{ // список лайкнувших пост пользователей
         type: mongoose.Schema.Types.ObjectId,
