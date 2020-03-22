@@ -1,0 +1,36 @@
+{
+    "name": "mesto-server",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "node node",
+        "dev:server": "nodemon node"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/karpov2/Mesto-server.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/karpov2/Mesto-server/issues"
+    },
+    "homepage": "https://github.com/karpov2/Mesto-server#readme",
+    "devDependencies": {
+        "dotenv": "8.2.0",
+        "eslint": "6.8.0",
+        "eslint-config-airbnb-base": "14.1.0",
+        "nodemon": "2.0.2"
+    },
+    "dependencies": {
+        "bcryptjs": "2.4.3",
+        "body-parser": "1.19.0",
+        "cookie-parser": "1.4.5",
+        "express": "4.17.1",
+        "jsonwebtoken": "8.5.1",
+        "mongoose": "5.9.5",
+        "node": "13.10.1",
+        "validator": "13.0.0"
+    }
+}
