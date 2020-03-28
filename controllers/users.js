@@ -1,30 +1,32 @@
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const config = require('../assets/config');
+const errorMessage = require('../assets/error-message');
 
 module.exports = {
     // возвращает всех пользователей
     getUserAll: (req, res) => {
         User.find({})
-            .then(users => res.send(users))
-            .catch(err => res.status(500).send({ message: 'Произошла ошибка при выводе всех пользователей', error: err }));
+            .then(users => res.json(users))
+            .catch(err => res.status(500).json(err));
     },
 
     // возвращает пользователя по _id
     getUserId: (req, res) => {
-        User.findById(req.params.userId)
-            .then(user => res.send(user))
-            .catch(err => res.status(404).send({ message: 'Произошла ошибка при выводе пользователя', error: err }));
+        User.findById(req.params.id)
+            .orFail()
+            .then(user => res.json(user))
+            .catch(err => errorMessage.error(err, res));
     },
 
     // обновляет профиль
     putProfileUpdate: (req, res) => {
-        const {name, avatar} = req.body;
-        const data = avatar ? {name, avatar} : {name};
+        const {name, about} = req.body;
 
-        User.findByIdAndUpdate(req.user._id, data, { runValidators: true, new: true })
-            .then(user => res.send(user))
-            .catch(err => res.status(400).send({ message: 'Произошла ошибка при обновлении информации профиля', error: err }));
+        User.findByIdAndUpdate(req.user._id, {name, about}, { runValidators: true, new: true })
+            .then(user => res.json(user))
+            .catch(err => res.status(500).json(err));
     },
 
     // обновляет аватар
@@ -32,8 +34,8 @@ module.exports = {
         const {avatar} = req.body;
 
         User.findByIdAndUpdate(req.user._id, {avatar}, { runValidators: true, new: true })
-            .then(user => res.send(user))
-            .catch(err => res.status(400).send({ message: 'Произошла ошибка при обновлении аватарки', error: err }));
+            .then(user => res.json(user))
+            .catch(err => res.status(500).json(err));
     },
 
     // создаёт пользователя
@@ -46,11 +48,16 @@ module.exports = {
         User.validate({name, about, avatar, email, password})
             .then(() => bcrypt.hash(password, 10))
             .then(hash => User.create({name, about, avatar, email, password: hash}))
-            .then(user => res.send(user))
-            .catch(err => res.status(400).send({
-                message: 'Произошла ошибка при создании нового пользователя',
-                error: err
-            }));
+            // .then(({_id}) => User.findById(_id))
+            .then(({_doc}) => {
+                delete _doc.password;
+                res.json(_doc);
+            })
+            .catch(err => {
+                res.status(
+                    err.name === 'ValidationError' ? 500 : 409
+                ).json(err);
+            });
     },
 
     login: (req, res) => {
@@ -62,29 +69,23 @@ module.exports = {
         };
 
         User.findOne({email})
+            .orFail()
             .select('+password')
             .then(user => {
-                // пользователь не найден — отклоняем промис
-                // с ошибкой и переходим в блок catch
-                if (!user) return Promise.reject(message.error);
-
                 // сравниваем переданный пароль и хеш из базы
                 return bcrypt.compare(password, user.password)
                      .then(matched => {
                          // хеши не совпали — отклоняем промис
-                         console.log(matched);
-                         if (!matched) return Promise.reject(message.error);
-
+                         if (!matched) return Promise.reject();
                          // аутентификация успешна
                          return user;
-                     });
+                     })
             })
             .then(user => {
-                const { NODE_ENV, JWT_SECRET } = process.env;
                 // создадим токен
                 const token = jwt.sign(
                     {_id: user._id},
-                    NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret',
+                    config.JWT_SECRET,
                     {expiresIn: '7d'});
 
                 // записываем токен в cookie пользователю
@@ -96,6 +97,6 @@ module.exports = {
                 // В чек лесте написано зачем то возвращать токен в ответе
                 // если почта и пароль верные, контроллер login возвращает созданный токен в ответе
             })
-            .catch(err => res.status(401).send({message: err}));
+            .catch(() => res.status(401).json({message: message.error}));
     },
 };

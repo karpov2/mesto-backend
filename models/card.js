@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const {isURL} = require('validator');
 
 const cardSchema = new mongoose.Schema({
     name: { // имя карточки
@@ -11,10 +12,8 @@ const cardSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Необходимо указать ссылку на изображение'],
         validate: {
-            validator: (link) => {
-                return /^https?:\/\/\S+(?:\.[a-zA-Z]{2,8})\/\S+(?:jpg|jpeg|png)$/.test(link);
-            },
-            message: props => `${props.value} не правильно указана ссылка на картинку`
+            validator: (link) => isURL(link),
+            message: props => `Не правильно указана ссылка на картинку ${props.value}`
         }
     },
     owner: { // ссылка на модель автора карточки

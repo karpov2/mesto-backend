@@ -1,24 +1,29 @@
 const jwt = require('jsonwebtoken');
+const config = require('../assets/config');
+const User = require('../models/user');
 
 const message = {
-    error: 'Необходима авторизация'
+    errorToken: 'Необходима авторизация',
+    errorUser: 'Пользователь удален, необходимо снова зарегистрироваться',
 };
 
 module.exports = (req, res, next) => {
     // Достаем токен из кукана)
     const { token } = req.cookies;
 
-    if (!token) return res.status(401).send(message.error);
+    if (!token) return res.status(401).json({message: message.errorToken});
 
     let payload;
     try {
-        const { NODE_ENV, JWT_SECRET } = process.env;
         // попытаемся верифицировать токен
-        payload = jwt.verify(token, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret');
+        payload = jwt.verify(token, config.JWT_SECRET);
     } catch (error) {
-        return res.status(401).send(message.error);
+        return res.status(401).json({message: message.errorToken});
     }
 
     req.user = payload; // записываем пейлоуд в объект запроса
-    next();
+    User.findById(req.user._id)
+        .orFail()
+        .then(() => next())
+        .catch(() => res.json({message: message.errorUser}));
 };

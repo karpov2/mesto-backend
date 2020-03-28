@@ -4,10 +4,9 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const router = require('./routes/routes');
 const cookieParser = require('cookie-parser');
+const config = require('./assets/config');
 
-const { PORT = 3000 } = process.env;
-
-mongoose.connect('mongodb://localhost:27017/mestodb', {
+mongoose.connect(config.DATABASE, {
     useNewUrlParser: true,
     useCreateIndex: true,
     useFindAndModify: false,
@@ -21,8 +20,8 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
     app.use(bodyParser.json()); // parse application/json
     app.use(router);
 
-    app.listen(PORT, () => {
-        console.log(`App listening on port ${PORT}`);
+    app.listen(config.PORT, () => {
+        console.info(`App listening on port ${config.PORT}`);
     });
 })
 .catch(error => {
