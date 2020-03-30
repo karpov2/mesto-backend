@@ -163,4 +163,23 @@ module.exports = class ErrorMessage {
         }
         return error;
     }
+
+    auth(err) {
+        let error = {};
+        switch (err.name) {
+            case 'Unauthorized':
+                error.status = 401;
+                error.message = 'Необходима авторизация';
+                break;
+            case 'DocumentNotFoundError':
+                error.status = 404;
+                error.message = 'Пользователь удален, необходимо снова зарегистрироваться';
+                break;
+            default:
+                error.status = 500;
+                error.message = 'Ошибка сервера';
+                break;
+        }
+        return error;
+    }
 };
