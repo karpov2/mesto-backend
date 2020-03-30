@@ -2,9 +2,7 @@ module.exports = class ErrorMessage {
     constructor(err, fn, res) {
         this.errors(this[fn](err));
         this.error = err;
-
         this.messages(res);
-
     }
 
     errors(error) {
