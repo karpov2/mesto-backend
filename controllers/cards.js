@@ -1,11 +1,12 @@
 const Card = require('../models/card');
+const ErrorMessage = require('../assets/error-message');
 
 module.exports = {
     // возвращает все карточки
     cardsGet: (req, res) => {
         Card.find({})
             .then(cards => res.send(cards))
-            .catch(err => res.status(500).json({ message: 'Произошла ошибка в выводе списка карточек', error: err }));
+            .catch(err => new ErrorMessage(err, 'cardsGet', res));
     },
 
     // создаёт карточку
@@ -13,7 +14,7 @@ module.exports = {
         const {name, link} = req.body;
         Card.create({name, link, owner: req.user._id})
             .then(card => res.send(card))
-            .catch(err => res.status(500).json({ message: 'Произошла ошибка в создании новой карточки', error: err }));
+            .catch(err => new ErrorMessage(err, 'cardPost', res));
     },
 
     // удаляет карточку по идентификатору
@@ -22,14 +23,12 @@ module.exports = {
             _id: req.params.id,
             owner: req.user._id
         })
+        .orFail()
         .then(card => {
-            if (!card) return Promise.reject();
+            if (!card) return Promise.reject({name: 'DocumentNotFoundError'});
             res.send(card)
         })
-        .catch(err => res.status(err ? 404 : 403).json({
-            message: 'Произошла ошибка в удалении карточки',
-            error: err
-        }));
+        .catch(err => new ErrorMessage(err, 'cardDelete', res));
     },
 
     // поставить лайк карточке
@@ -41,7 +40,7 @@ module.exports = {
         )
         .orFail()
         .then(card => res.send(card))
-        .catch(err => res.status(500).json({ message: 'Произошла ошибка в добавлении лайка карточки', error: err }));
+        .catch(err => new ErrorMessage(err, 'cardLikePut', res));
     },
 
     // убрать лайк с карточки
@@ -51,7 +50,8 @@ module.exports = {
             { $pull: { likes: req.user._id } }, // убрать _id из массива
             { new: true }
         )
+        .orFail()
         .then(card => res.send(card))
-        .catch(err => res.status(500).json({ message: 'Произошла ошибка в удалении лайка карточки', error: err }));
+        .catch(err => new ErrorMessage(err, 'cardLikeDelete', res));
     },
 };

@@ -2,7 +2,7 @@ const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('../assets/config');
-const errorMessage = require('../assets/error-message');
+const ErrorMessage = require('../assets/error-message');
 
 module.exports = {
     // возвращает всех пользователей
@@ -17,7 +17,7 @@ module.exports = {
         User.findById(req.params.id)
             .orFail()
             .then(user => res.json(user))
-            .catch(err => errorMessage.error(err, res));
+            .catch(err => new ErrorMessage(err, 'getUserId', res));
     },
 
     // обновляет профиль
@@ -48,25 +48,16 @@ module.exports = {
         User.validate({name, about, avatar, email, password})
             .then(() => bcrypt.hash(password, 10))
             .then(hash => User.create({name, about, avatar, email, password: hash}))
-            // .then(({_id}) => User.findById(_id))
             .then(({_doc}) => {
                 delete _doc.password;
                 res.json(_doc);
             })
-            .catch(err => {
-                res.status(
-                    err.name === 'ValidationError' ? 500 : 409
-                ).json(err);
-            });
+            .catch(err => new ErrorMessage(err, 'postUser', res));
     },
 
     login: (req, res) => {
         // Получаю авторизационные данные из запроса
         const {email, password} = req.body;
-        const message = {
-            error: 'Произошла ошибка при авторизации, неверный email или пароль',
-            success: 'Авторизация прошла успешно'
-        };
 
         User.findOne({email})
             .orFail()
@@ -76,7 +67,7 @@ module.exports = {
                 return bcrypt.compare(password, user.password)
                      .then(matched => {
                          // хеши не совпали — отклоняем промис
-                         if (!matched) return Promise.reject();
+                         if (!matched) return Promise.reject({name: 'NoBcryptCompare'});
                          // аутентификация успешна
                          return user;
                      })
@@ -97,6 +88,6 @@ module.exports = {
                 // В чек лесте написано зачем то возвращать токен в ответе
                 // если почта и пароль верные, контроллер login возвращает созданный токен в ответе
             })
-            .catch(() => res.status(401).json({message: message.error}));
+            .catch(err => new ErrorMessage(err, 'login', res));
     },
 };
