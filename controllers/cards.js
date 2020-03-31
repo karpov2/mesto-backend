@@ -19,16 +19,15 @@ module.exports = {
 
     // удаляет карточку по идентификатору
     cardDelete: (req, res) => {
-        Card.findOneAndRemove({
-            _id: req.params.id,
-            owner: req.user._id
-        })
-        .orFail()
-        .then(card => {
-            if (!card) return Promise.reject({name: 'DocumentNotFoundError'});
-            res.send(card)
-        })
-        .catch(err => new ErrorMessage(err, 'cardDelete', res));
+        Card.findById(req.params.id)
+            .orFail()
+            .then(card => {
+                if (!card) return Promise.reject({name: 'DocumentNotFoundError'});
+                if (!card.owner.equals(req.user._id)) return Promise.reject({name: 'ForbiddenError'});
+
+                return Card.deleteOne(card).then(card => res.send(card));
+            })
+            .catch(err => new ErrorMessage(err, 'cardDelete', res));
     },
 
     // поставить лайк карточке

@@ -97,8 +97,8 @@ module.exports = class ErrorMessage {
                 error.status = 409;
                 error.message = 'Произошла ошибка при авторизации, неверный email или пароль';
                 break;
-            case 'NoBcryptCompare':
-                error.status = 500;
+            case 'Unauthorized':
+                error.status = 401;
                 error.message = 'Произошла ошибка при авторизации, неверный email или пароль';
                 break;
             default:
@@ -148,11 +148,15 @@ module.exports = class ErrorMessage {
         switch (err.name) {
             case 'CastError':
                 error.status = 500;
-                error.message = 'Произошла ошибка в удалении карточки';
+                error.message = 'Произошла ошибка в удалении карточки, неверно указана карточка';
                 break;
             case 'DocumentNotFoundError':
                 error.status = 404;
                 error.message = 'Произошла ошибка в удалении карточки, данной карточки не существует';
+                break;
+            case 'ForbiddenError':
+                error.status = 403;
+                error.message = 'Произошла ошибка в удалении карточки, у вас нет прав на удаление данной карточки';
                 break;
             default:
                 error.status = 500;

@@ -67,7 +67,7 @@ module.exports = {
                 return bcrypt.compare(password, user.password)
                      .then(matched => {
                          // хеши не совпали — отклоняем промис
-                         if (!matched) return Promise.reject({name: 'NoBcryptCompare'});
+                         if (!matched) return Promise.reject({name: 'Unauthorized'});
                          // аутентификация успешна
                          return user;
                      })
