@@ -18,12 +18,13 @@
     },
     "homepage": "https://github.com/karpov2/Mesto-server#readme",
     "devDependencies": {
-        "dotenv": "8.2.0",
         "eslint": "6.8.0",
         "eslint-config-airbnb-base": "14.1.0",
+        "eslint-plugin-import": "^2.20.2",
         "nodemon": "2.0.2"
     },
     "dependencies": {
+        "dotenv": "8.2.0",
         "bcryptjs": "2.4.3",
         "body-parser": "1.19.0",
         "cookie-parser": "1.4.5",

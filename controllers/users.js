@@ -1,45 +1,102 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const config = require('../assets/config');
+const ErrorMessage = require('../assets/error-message');
 
-// возвращает всех пользователей
-const usersGet = (req, res) => {
-    User.find({})
-        .then(users => res.send(users))
-        .catch(err => res.status(500).send({ message: 'Произошла ошибка в выводе списка пользователей', error: err }));
+module.exports = {
+    // возвращает всех пользователей
+    getUserAll: (req, res) => {
+        User.find({})
+            .then((users) => res.json(users))
+            .catch((err) => res.status(500).json(err));
+    },
+
+    // возвращает пользователя по _id
+    getUserId: (req, res) => {
+        User.findById(req.params.id)
+            .orFail()
+            .then((user) => res.json(user))
+            .catch((err) => new ErrorMessage(err, 'getUserId', res));
+    },
+
+    // обновляет профиль
+    putProfileUpdate: (req, res) => {
+        const { name, about } = req.body;
+
+        User.findByIdAndUpdate(req.user._id, { name, about }, { runValidators: true, new: true })
+            .then((user) => res.json(user))
+            .catch((err) => res.status(500).json(err));
+    },
+
+    // обновляет аватар
+    putAvatarUpdate: (req, res) => {
+        const { avatar } = req.body;
+
+        User.findByIdAndUpdate(req.user._id, { avatar }, { runValidators: true, new: true })
+            .then((user) => res.json(user))
+            .catch((err) => res.status(500).json(err));
+    },
+
+    // создаёт пользователя
+    postUser: (req, res) => {
+        // Получаю все данные из запроса
+        const {
+            name, about, avatar, email, password,
+        } = req.body;
+
+        // Сначала валидирую (что бы получить ошибки перед хешированием и отправкой)
+        // Если все ок, хеширую пароль и отправляю на сервер
+        User.validate({
+            name, about, avatar, email, password,
+        })
+            .then(() => bcrypt.hash(password, 10))
+            .then((hash) => User.create({
+                name, about, avatar, email, password: hash,
+            }))
+            .then(({ _doc }) => {
+                const user = _doc;
+                delete user.password;
+                res.json(user);
+            })
+            .catch((err) => new ErrorMessage(err, 'postUser', res));
+    },
+
+    login: (req, res) => {
+        // Получаю авторизационные данные из запроса
+        const { email, password } = req.body;
+
+        User.findOne({ email })
+            .orFail()
+            .select('+password')
+            // сравниваем переданный пароль и хеш из базы
+            .then((user) => bcrypt.compare(password, user.password)
+                .then((matched) => {
+                    // хеши не совпали — отклоняем промис
+                    if (!matched) {
+                        const name = { name: 'Unauthorized' };
+                        return Promise.reject(name);
+                    }
+                    // аутентификация успешна
+                    return user;
+                }))
+            .then((user) => {
+                // создадим токен
+                const token = jwt.sign(
+                    { _id: user._id },
+                    config.JWT_SECRET,
+                    { expiresIn: '7d' },
+                );
+
+                // записываем токен в cookie пользователю
+                res.cookie('token', token, {
+                    maxAge: 3600000 * 24 * 7,
+                    httpOnly: true,
+                    sameSite: true,
+                }).end(token);
+                // В чек лесте написано зачем то возвращать токен в ответе
+                // если почта и пароль верные, контроллер login возвращает созданный токен в ответе
+            })
+            .catch((err) => new ErrorMessage(err, 'login', res));
+    },
 };
-
-// возвращает пользователя по _id
-const userGet = (req, res) => {
-    User.findById(req.params.userId)
-        .then(user => res.send(user))
-        .catch(err => res.status(404).send({ message: 'Произошла ошибка в выводе пользователя', error: err }));
-};
-
-// обновляет профиль
-const userProfilePatch = (req, res) => {
-    const {name, avatar} = req.body;
-    const data = avatar ? {name, avatar} : {name};
-
-    User.findByIdAndUpdate(req.user._id, data, { runValidators: true, new: true })
-        .then(user => res.send(user))
-        .catch(err => res.status(500).send({ message: 'Произошла ошибка в обновлении информации пользователя', error: err }));
-};
-
-// обновляет аватар
-const userProfileAvatarPatch = (req, res) => {
-    const {avatar} = req.body;
-
-    User.findByIdAndUpdate(req.user._id, {avatar}, { runValidators: true, new: true })
-        .then(user => res.send(user))
-        .catch(err => res.status(500).send({ message: 'Произошла ошибка в обновлении аватарки пользователя', error: err }));
-};
-
-// создаёт пользователя
-const userPost = (req, res) => {
-    const {name, about, avatar} = req.body;
-
-    User.create({name, about, avatar})
-        .then(user => res.send({name: user.name, about: user.about}))
-        .catch(err => res.status(500).send({ message: 'Произошла ошибка в создании нового пользователя', error: err }));
-};
-
-module.exports = {usersGet, userGet, userPost, userProfilePatch, userProfileAvatarPatch};

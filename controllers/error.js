@@ -1,7 +1,4 @@
-const errorPage = (req, res) => {
-    res.set('Content-Type', 'application/json')
-       .status(404)
-       .send({ "message": "Запрашиваемый ресурс не найден" });
+module.exports = (req, res) => {
+    res.status(404).json({ message: 'Запрашиваемый ресурс не найден' });
+    console.log('мы тут были');
 };
-
-module.exports = errorPage;
