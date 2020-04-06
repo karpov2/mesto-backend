@@ -5,13 +5,13 @@
     "main": "index.js",
     "scripts": {
         "start": "node node",
-        "dev:server": "nodemon node"
+        "dev": "nodemon node"
     },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/karpov2/mesto-backend.git"
     },
-    "author": "",
+    "author": "Ilya Karpov",
     "license": "ISC",
     "bugs": {
         "url": "https://github.com/karpov2/mesto-backend/issues"
@@ -33,7 +33,6 @@
         "express-winston": "^4.0.3",
         "jsonwebtoken": "8.5.1",
         "mongoose": "5.9.5",
-        "node": "13.10.1",
         "validator": "13.0.0",
         "winston": "^3.2.1"
     }
