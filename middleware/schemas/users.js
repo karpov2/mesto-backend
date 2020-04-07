@@ -17,7 +17,9 @@ module.exports = {
 
     putAvatarUpdate: celebrate({
         [Segments.BODY]: Joi.object().keys({
-            avatar: Joi.string().required().uri(),
+            avatar: Joi.string().required().uri({
+                relativeOnly: true,
+            }),
             userId: Joi.string().alphanum().length(24),
         }),
     }),

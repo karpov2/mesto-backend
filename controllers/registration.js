@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const BadRequest = require('../middleware/errors/bad-request');
+const messages = require('../middleware/errors/messages');
 
 // создаёт пользователя
 module.exports = (req, res, next) => {
@@ -18,5 +19,5 @@ module.exports = (req, res, next) => {
             delete user.password;
             res.json(user);
         })
-        .catch((err) => next(new BadRequest(err.message)));
+        .catch(() => next(new BadRequest(messages.registration.mongoError)));
 };
