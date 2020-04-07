@@ -25,8 +25,6 @@ mongoose.connect(config.DATABASE, {
 
         app.listen(config.PORT, () => {
             console.info(`App listening on port ${config.PORT}`);
-            console.info(`Mode ${process.env.NODE_ENV}`);
-            console.info(`config.DATABASE ${config.DATABASE}`);
         });
     })
     .catch((error) => {
