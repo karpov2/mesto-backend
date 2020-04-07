@@ -44,7 +44,8 @@ module.exports = {
         )
             .orFail(new NotFoundError(messages.cardLikePut.notFoundError))
             .then((card) => res.send(card))
-            .catch(next);
+            .catch((err) => (err.name === 'CastError'
+                ? next(new NotFoundError(messages.cardLikePut.castError)) : next));
     },
 
     // убрать лайк с карточки
@@ -56,6 +57,7 @@ module.exports = {
         )
             .orFail(new NotFoundError(messages.cardLikeDelete.notFoundError))
             .then((card) => res.send(card))
-            .catch(next);
+            .catch((err) => (err.name === 'CastError'
+                ? next(new NotFoundError(messages.cardLikeDelete.castError)) : next));
     },
 };
