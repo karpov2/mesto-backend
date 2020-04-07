@@ -1,102 +1,39 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const config = require('../assets/config');
-const ErrorMessage = require('../assets/error-message');
+const NotFoundError = require('../middleware/errors/not-found');
+const BadRequest = require('../middleware/errors/bad-request');
+const messages = require('../middleware/errors/messages');
 
 module.exports = {
     // возвращает всех пользователей
-    getUserAll: (req, res) => {
+    getUserAll: (req, res, next) => {
         User.find({})
             .then((users) => res.json(users))
-            .catch((err) => res.status(500).json(err));
+            .catch(next);
     },
 
     // возвращает пользователя по _id
-    getUserId: (req, res) => {
+    getUserId: (req, res, next) => {
         User.findById(req.params.id)
-            .orFail()
+            .orFail(new NotFoundError(messages.getUserId.notFoundError))
             .then((user) => res.json(user))
-            .catch((err) => new ErrorMessage(err, 'getUserId', res));
+            .catch(next);
     },
 
     // обновляет профиль
-    putProfileUpdate: (req, res) => {
-        const { name, about } = req.body;
+    putProfileUpdate: (req, res, next) => {
+        const { name, about, userId } = req.body;
 
-        User.findByIdAndUpdate(req.user._id, { name, about }, { runValidators: true, new: true })
+        User.findByIdAndUpdate(userId, { name, about }, { runValidators: true, new: true })
             .then((user) => res.json(user))
-            .catch((err) => res.status(500).json(err));
+            .catch((err) => next(new BadRequest(err.message)));
     },
 
     // обновляет аватар
-    putAvatarUpdate: (req, res) => {
-        const { avatar } = req.body;
+    putAvatarUpdate: (req, res, next) => {
+        const { avatar, userId } = req.body;
 
-        User.findByIdAndUpdate(req.user._id, { avatar }, { runValidators: true, new: true })
+        User.findByIdAndUpdate(userId, { avatar }, { runValidators: true, new: true })
             .then((user) => res.json(user))
-            .catch((err) => res.status(500).json(err));
-    },
-
-    // создаёт пользователя
-    postUser: (req, res) => {
-        // Получаю все данные из запроса
-        const {
-            name, about, avatar, email, password,
-        } = req.body;
-
-        // Сначала валидирую (что бы получить ошибки перед хешированием и отправкой)
-        // Если все ок, хеширую пароль и отправляю на сервер
-        User.validate({
-            name, about, avatar, email, password,
-        })
-            .then(() => bcrypt.hash(password, 10))
-            .then((hash) => User.create({
-                name, about, avatar, email, password: hash,
-            }))
-            .then(({ _doc }) => {
-                const user = _doc;
-                delete user.password;
-                res.json(user);
-            })
-            .catch((err) => new ErrorMessage(err, 'postUser', res));
-    },
-
-    login: (req, res) => {
-        // Получаю авторизационные данные из запроса
-        const { email, password } = req.body;
-
-        User.findOne({ email })
-            .orFail()
-            .select('+password')
-            // сравниваем переданный пароль и хеш из базы
-            .then((user) => bcrypt.compare(password, user.password)
-                .then((matched) => {
-                    // хеши не совпали — отклоняем промис
-                    if (!matched) {
-                        const name = { name: 'Unauthorized' };
-                        return Promise.reject(name);
-                    }
-                    // аутентификация успешна
-                    return user;
-                }))
-            .then((user) => {
-                // создадим токен
-                const token = jwt.sign(
-                    { _id: user._id },
-                    config.JWT_SECRET,
-                    { expiresIn: '7d' },
-                );
-
-                // записываем токен в cookie пользователю
-                res.cookie('token', token, {
-                    maxAge: 3600000 * 24 * 7,
-                    httpOnly: true,
-                    sameSite: true,
-                }).end(token);
-                // В чек лесте написано зачем то возвращать токен в ответе
-                // если почта и пароль верные, контроллер login возвращает созданный токен в ответе
-            })
-            .catch((err) => new ErrorMessage(err, 'login', res));
+            .catch((err) => next(new BadRequest(err.message)));
     },
 };

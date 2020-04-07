@@ -1,27 +1,29 @@
 const jwt = require('jsonwebtoken');
-const config = require('../assets/config');
+const config = require('../config');
 const User = require('../models/user');
-const ErrorMessage = require('../assets/error-message');
+const Unauthorized = require('./errors/unauthorized');
+const NotFoundError = require('./errors/not-found');
+const messages = require('./errors/messages');
 
 module.exports = (req, res, next) => {
     // Достаем токен из кукана)
     const { token } = req.cookies;
 
-    const errors = (err) => new ErrorMessage(err, 'auth', res);
+    const errors = new Unauthorized(messages.auth.unauthorized);
 
-    if (!token) return errors({ name: 'Unauthorized' });
+    if (!token) throw next(errors);
 
     let payload;
     try {
         // попытаемся верифицировать токен
         payload = jwt.verify(token, config.JWT_SECRET);
     } catch (error) {
-        return errors({ name: 'Unauthorized' });
+        throw next(errors);
     }
 
-    req.user = payload; // записываем пейлоуд в объект запроса
-    return User.findById(req.user._id)
-        .orFail()
+    req.body.userId = payload._id; // записываем пейлоуд в объект запроса
+    return User.findById(req.body.userId)
+        .orFail(new NotFoundError(messages.auth.notFoundError))
         .then(() => next())
-        .catch((err) => errors(err));
+        .catch(next);
 };

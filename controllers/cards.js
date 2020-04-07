@@ -1,57 +1,63 @@
 const Card = require('../models/card');
-const ErrorMessage = require('../assets/error-message');
+const NotFoundError = require('../middleware/errors/not-found');
+const BadRequest = require('../middleware/errors/bad-request');
+const Unauthorized = require('../middleware/errors/unauthorized');
+const messages = require('../middleware/errors/messages');
 
 module.exports = {
     // возвращает все карточки
-    cardsGet: (req, res) => {
+    cardsGet: (req, res, next) => {
         Card.find({})
             .then((cards) => res.send(cards))
-            .catch((err) => new ErrorMessage(err, 'cardsGet', res));
+            .catch(next);
     },
 
     // создаёт карточку
-    cardPost: (req, res) => {
-        const { name, link } = req.body;
-        Card.create({ name, link, owner: req.user._id })
+    cardPost: (req, res, next) => {
+        const { name, link, userId } = req.body;
+        Card.create({ name, link, owner: userId })
             .then((card) => res.send(card))
-            .catch((err) => new ErrorMessage(err, 'cardPost', res));
+            .catch((err) => next(new BadRequest(err.message)));
     },
 
     // удаляет карточку по идентификатору
-    cardDelete: (req, res) => {
+    cardDelete: (req, res, next) => {
         Card.findById(req.params.id)
-            .orFail()
+            .orFail(new NotFoundError(messages.cardDelete.notFoundError))
             .then((card) => {
-                const name = (error) => ({ name: error });
-                if (!card) return Promise.reject(name('DocumentNotFoundError'));
-                if (!card.owner.equals(req.user._id)) return Promise.reject(name('ForbiddenError'));
+                if (!card) throw new NotFoundError(messages.cardDelete.notFoundError);
+                if (!card.owner.equals(req.body.userId)) {
+                    throw new Unauthorized(messages.cardDelete.unauthorized);
+                }
 
                 return Card.deleteOne(card).then(() => res.send(card));
             })
-            .catch((err) => new ErrorMessage(err, 'cardDelete', res));
+            .catch(next);
     },
 
     // поставить лайк карточке
-    cardLikePut: (req, res) => {
+    cardLikePut: (req, res, next) => {
         Card.findByIdAndUpdate(
             req.params.id,
-            { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
+            { $addToSet: { likes: req.body.userId } }, // добавить _id в массив, если его там нет
             { new: true },
         )
-            .orFail()
+            .orFail(new NotFoundError(messages.cardLikePut.notFoundError))
             .then((card) => res.send(card))
-            .catch((err) => new ErrorMessage(err, 'cardLikePut', res));
+            .catch((err) => (err.name === 'CastError'
+                ? next(new NotFoundError(messages.cardLikePut.castError)) : next));
     },
 
     // убрать лайк с карточки
-    cardLikeDelete: (req, res) => {
+    cardLikeDelete: (req, res, next) => {
         Card.findByIdAndUpdate(
             req.params.id,
-            { $pull: { likes: req.user._id } }, // убрать _id из массива
+            { $pull: { likes: req.body.userId } }, // убрать _id из массива
             { new: true },
         )
-            .orFail()
+            .orFail(new NotFoundError(messages.cardLikeDelete.notFoundError))
             .then((card) => res.send(card))
-            .catch((err) => new ErrorMessage(err, 'cardLikeDelete', res));
+            .catch((err) => (err.name === 'CastError'
+                ? next(new NotFoundError(messages.cardLikeDelete.castError)) : next));
     },
 };
