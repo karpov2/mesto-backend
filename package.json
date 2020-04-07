@@ -5,7 +5,8 @@
     "main": "node.js",
     "scripts": {
         "start": "node node",
-        "dev": "nodemon node"
+        "dev": "nodemon node",
+        "env": "scp .env karpov@84.201.159.129:/home/karpov/mesto-backend/"
     },
     "repository": {
         "type": "git",

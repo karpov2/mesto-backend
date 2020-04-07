@@ -4,9 +4,7 @@ module.exports = {
     cardPost: celebrate({
         [Segments.BODY]: Joi.object().keys({
             name: Joi.string().required().min(2).max(30),
-            link: Joi.string().required().uri({
-                relativeOnly: true,
-            }),
+            link: Joi.string().required().uri(),
             userId: Joi.string().alphanum().length(24),
         }),
     }),
