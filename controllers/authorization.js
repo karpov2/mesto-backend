@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const config = require('../assets/config');
+const config = require('../config');
 const Unauthorized = require('../middleware/errors/unauthorized');
 const messages = require('../middleware/errors/messages');
 

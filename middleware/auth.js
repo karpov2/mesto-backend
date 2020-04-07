@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const config = require('../assets/config');
+const config = require('../config');
 const User = require('../models/user');
 const Unauthorized = require('./errors/unauthorized');
 const NotFoundError = require('./errors/not-found');

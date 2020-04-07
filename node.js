@@ -1,5 +1,3 @@
-require('dotenv')
-    .config();
 const mongoose = require('mongoose');
 const express = require('express');
 const helmet = require('helmet');
@@ -7,7 +5,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const limiter = require('./middleware/limiter');
 const router = require('./routes/routes');
-const config = require('./assets/config');
+const config = require('./config');
 
 mongoose.connect(config.DATABASE, {
     useNewUrlParser: true,
@@ -27,6 +25,8 @@ mongoose.connect(config.DATABASE, {
 
         app.listen(config.PORT, () => {
             console.info(`App listening on port ${config.PORT}`);
+            console.info(`Mode ${process.env.NODE_ENV}`);
+            console.info(`config.DATABASE ${config.DATABASE}`);
         });
     })
     .catch((error) => {
